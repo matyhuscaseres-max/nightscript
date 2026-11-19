@@ -1,34 +1,25 @@
 # NightScript
 
-Proyecto independiente para experimentar con automatizaciones de conducción en **Night Rider 🏍️ [TESTING]** de Roblox.
+Proyecto independiente para experimentar con automatizaciones de conducción en Night Rider [TESTING] de Roblox.
 
-## Estado actual
+## Lane Change Companion
 
-**v0.1.0 — Auto Lane (prototipo para PC)**
+Archivo: `LaneChangeAddon.lua`
 
-- Activa/desactiva el cambio automático de carril desde una pequeña interfaz.
-- Espera a que el personaje alcance velocidad de autopista.
-- Alterna entre izquierda y derecha con intervalos aleatorios.
-- Comprueba con raycasts si el carril contiguo parece libre.
-- Reintenta más pronto si ambos lados están ocupados.
+Complemento independiente para PC:
+- Se ejecuta junto al sistema de farmeo existente.
+- Se activa y desactiva desde su propia interfaz.
+- Comprueba que el personaje esté sentado y que la moto se mueva.
+- Alterna las teclas A y D cada 60 segundos.
 - RightShift muestra u oculta el panel.
+
+El complemento no detecta si el otro sistema está farmeando; actívalo manualmente mientras conduces/farmeas. Tampoco incluye funciones para ocultar automatización ni evadir anti-cheat.
 
 ## Ajustes
 
-En la tabla `CONFIG` de `NightScript.lua` puedes cambiar:
+Edita la tabla `CONFIG` en `LaneChangeAddon.lua`:
+- `IntervalSeconds`: tiempo entre cambios.
+- `SteerHoldSeconds`: duración de A/D.
+- `MinSpeed`: velocidad mínima para enviar el cambio.
 
-- `MinInterval` / `MaxInterval`: intervalo entre cambios (segundos).
-- `MinSpeed`: velocidad horizontal mínima (studs/s).
-- `LaneOffset`: distancia lateral estimada al carril contiguo.
-- `LookAhead`: distancia de comprobación de tráfico.
-- `SteerDuration`: cuánto tiempo mantiene A o D.
-
-## Limitaciones de esta primera versión
-
-- Está pensada para teclado de PC; no implementa controles táctiles ni mando.
-- No se ha probado dentro de un servidor real todavía.
-- Los controles A/D y las distancias deben verificarse con la moto elegida.
-- La comprobación por raycast es básica: puede no detectar todos los vehículos o puede marcar obstáculos del mapa como carril ocupado.
-- No modifica ni reutiliza el código ofuscado de terceros.
-
-Usa el script únicamente donde esté permitido por las reglas del juego y de la plataforma.
+Es un prototipo de PC y necesita probarse en el juego. Las teclas y el tiempo de pulsación pueden requerir ajuste según el comportamiento de la moto. No se ha probado en un servidor real.

@@ -30,9 +30,12 @@ local CONFIG = {
     -- One lane change every 10 seconds.
     IntervalSeconds = 10,
 
-    -- Time A/D is held for each lane change.
-    -- Increase slightly if the game does not register the change.
-    SteerHoldSeconds = 0.20,
+    -- Short A/D pulses are used to reach the center of the next lane.
+    SteerHoldSeconds = 0.10,
+    LaneOffset = 10,
+    CenterTolerance = 1.0,
+    CenterTimeout = 3.0,
+    CenterSettleTime = 0.05,
 
     -- Avoid steering while stationary or moving very slowly.
     MinSpeed = 15,
@@ -74,7 +77,7 @@ local function getDrivingState()
         )
     end
 
-    return true, horizontalSpeed, "Conduciendo"
+    return true, horizontalSpeed, "Conduciendo", root
 end
 
 local function sendSteeringKey(keyName)
@@ -105,6 +108,56 @@ local function sendSteeringKey(keyName)
     end)
 
     return ok
+end
+
+-- Move toward the neighboring lane, then stop steering at its center.
+local function centerAdjacentLane(root, directionKey)
+    if not root or not root.Parent then
+        return false
+    end
+
+    local look = root.CFrame.LookVector
+    local forward = Vector3.new(look.X, 0, look.Z)
+    if forward.Magnitude < 0.001 then
+        return false
+    end
+
+    forward = forward.Unit
+    local right = Vector3.new(-forward.Z, 0, forward.X)
+    local direction = directionKey == "A" and -1 or 1
+    local targetOffset = CONFIG.LaneOffset * direction
+    local startPosition = root.Position
+    local deadline = os.clock() + CONFIG.CenterTimeout
+
+    while root.Parent and os.clock() < deadline do
+        local displacement = root.Position - startPosition
+        local horizontalDisplacement = Vector3.new(
+            displacement.X, 0, displacement.Z
+        )
+        local currentOffset = horizontalDisplacement:Dot(right)
+        local remaining = targetOffset - currentOffset
+
+        if math.abs(remaining) <= CONFIG.CenterTolerance then
+            return true
+        end
+
+        local correctionKey = remaining < 0 and "A" or "D"
+        if not sendSteeringKey(correctionKey) then
+            return false
+        end
+        task.wait(CONFIG.CenterSettleTime)
+    end
+
+    if not root.Parent then
+        return false
+    end
+
+    local displacement = root.Position - startPosition
+    local horizontalDisplacement = Vector3.new(
+        displacement.X, 0, displacement.Z
+    )
+    local finalOffset = horizontalDisplacement:Dot(right)
+    return math.abs(targetOffset - finalOffset) <= CONFIG.CenterTolerance * 1.5
 end
 
 -- Minimal panel.
@@ -248,26 +301,26 @@ refresh()
 task.spawn(function()
     while running do
         if enabled then
-            local canSteer, speed, stateMessage = getDrivingState()
+            local canSteer, speed, stateMessage, root = getDrivingState()
 
             if not canSteer then
                 status.Text = stateMessage
             elseif os.clock() >= nextChangeAt then
                 local direction = nextDirection
-                local ok = sendSteeringKey(direction)
+                local ok = centerAdjacentLane(root, direction)
 
                 if ok then
                     nextDirection = direction == "A" and "D" or "A"
                     nextChangeAt = os.clock() + CONFIG.IntervalSeconds
                     status.Text = string.format(
-                        "Cambio enviado: %s | Próximo en %d s | %.0f studs/s",
+                        "Carril centrado: %s | Próximo en %d s | %.0f studs/s",
                         direction == "A" and "izquierda" or "derecha",
                         CONFIG.IntervalSeconds,
                         speed
                     )
                 else
                     nextChangeAt = os.clock() + 5
-                    status.Text = "No se pudo enviar la tecla. Reintentando..."
+                    status.Text = "No se pudo centrar en el nuevo carril. Reintentando..."
                 end
             else
                 local remaining = math.max(0, math.ceil(nextChangeAt - os.clock()))

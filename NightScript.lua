@@ -28,9 +28,8 @@ local LocalPlayer = Players.LocalPlayer
 local CONFIG = {
     EnabledOnStart = false,
 
-    -- Wait a random amount in this range between lane changes.
-    MinInterval = 50,
-    MaxInterval = 85,
+    -- Fixed delay between successful lane changes.
+    IntervalSeconds = 10,
 
     -- Do not steer unless horizontal speed is above this value (studs/sec).
     MinSpeed = 28,
@@ -42,8 +41,11 @@ local CONFIG = {
     -- How far ahead to check for traffic in the target lane.
     LookAhead = 65,
 
-    -- Time to hold A or D. Tune carefully; long holds can cause a wobble.
-    SteerDuration = 0.22,
+    -- Short steering pulses are used to reach the adjacent lane center.
+    SteerDuration = 0.10,
+    CenterTolerance = 1.0,
+    CenterTimeout = 3.0,
+    CenterSettleTime = 0.05,
 
     -- Retry sooner when both neighboring lanes appear blocked.
     BlockedRetry = 8,
@@ -55,7 +57,7 @@ local CONFIG = {
 local running = true
 local enabled = CONFIG.EnabledOnStart
 local preferredDirection = (math.random(0, 1) == 0) and -1 or 1
-local nextChangeAt = os.clock() + math.random(CONFIG.MinInterval, CONFIG.MaxInterval)
+local nextChangeAt = os.clock() + CONFIG.IntervalSeconds
 
 local function getCharacterParts()
     local character = LocalPlayer.Character
@@ -171,8 +173,48 @@ local function tapSteeringKey(direction)
     return ok
 end
 
-local function randomNextInterval()
-    return math.random(CONFIG.MinInterval, CONFIG.MaxInterval)
+-- Change lanes in short pulses and stop once the bike reaches the target
+-- lateral offset. The starting right-vector is kept as the lane reference
+-- while the bike completes this short maneuver.
+local function centerAdjacentLane(root, direction)
+    local _, right = getFlatDirections(root)
+    if not right then
+        return false
+    end
+
+    local startPosition = root.Position
+    local targetOffset = CONFIG.LaneOffset * direction
+    local deadline = os.clock() + CONFIG.CenterTimeout
+
+    while root.Parent and os.clock() < deadline do
+        local displacement = root.Position - startPosition
+        local horizontalDisplacement = Vector3.new(
+            displacement.X, 0, displacement.Z
+        )
+        local currentOffset = horizontalDisplacement:Dot(right)
+        local remaining = targetOffset - currentOffset
+
+        if math.abs(remaining) <= CONFIG.CenterTolerance then
+            return true
+        end
+
+        local correction = remaining > 0 and 1 or -1
+        if not tapSteeringKey(correction) then
+            return false
+        end
+        task.wait(CONFIG.CenterSettleTime)
+    end
+
+    if not root.Parent then
+        return false
+    end
+
+    local displacement = root.Position - startPosition
+    local horizontalDisplacement = Vector3.new(
+        displacement.X, 0, displacement.Z
+    )
+    local finalOffset = horizontalDisplacement:Dot(right)
+    return math.abs(targetOffset - finalOffset) <= CONFIG.CenterTolerance * 1.5
 end
 
 -- Minimal movable-feeling control panel.
@@ -283,7 +325,7 @@ end
 
 local function setEnabled(value)
     enabled = value
-    nextChangeAt = os.clock() + randomNextInterval()
+    nextChangeAt = os.clock() + CONFIG.IntervalSeconds
     refreshButton()
 
     if enabled then
@@ -360,18 +402,18 @@ task.spawn(function()
                 end
 
                 if chosenDirection then
-                    local sent = tapSteeringKey(chosenDirection)
+                    local sent = centerAdjacentLane(root, chosenDirection)
 
                     if sent then
                         preferredDirection = -chosenDirection
                         setStatus(
                             (chosenDirection < 0 and "Carril izquierdo" or "Carril derecho")
-                            .. " | Próximo cambio en "
-                            .. tostring(randomNextInterval())
+                            .. " | Centrado | Próximo cambio en "
+                            .. tostring(CONFIG.IntervalSeconds)
                             .. " s"
                         )
                         task.wait(CONFIG.PostChangeDelay)
-                        nextChangeAt = os.clock() + randomNextInterval()
+                        nextChangeAt = os.clock() + CONFIG.IntervalSeconds
                     else
                         setStatus("No se pudo enviar A/D en este executor.")
                         nextChangeAt = os.clock() + CONFIG.BlockedRetry

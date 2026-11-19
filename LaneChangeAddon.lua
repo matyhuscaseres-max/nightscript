@@ -1,7 +1,7 @@
 --[[
     NightScript - Lane Change Companion
     Target: Night Rider [TESTING] (Roblox), PC controls
-    Version: 0.2.0
+    Version: 0.3.0
 
     Run alongside the existing farming routine.
     Start your farm first, then enable this companion with its UI button.
@@ -27,8 +27,8 @@ local LocalPlayer = Players.LocalPlayer
 local CONFIG = {
     StartEnabled = false,
 
-    -- One lane change every 60 seconds.
-    IntervalSeconds = 60,
+    -- One lane change every 10 seconds.
+    IntervalSeconds = 10,
 
     -- Time A/D is held for each lane change.
     -- Increase slightly if the game does not register the change.
@@ -211,7 +211,7 @@ local function setEnabled(value)
     refresh()
 
     if enabled then
-        status.Text = "Activo. Cambiará de carril cada 60 segundos."
+        status.Text = string.format("Activo. Cambiará de carril cada %d segundos.", CONFIG.IntervalSeconds)
     else
         status.Text = "Desactivado."
     end

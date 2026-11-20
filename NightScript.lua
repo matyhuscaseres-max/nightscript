@@ -28,8 +28,8 @@ local LocalPlayer = Players.LocalPlayer
 local CONFIG = {
     EnabledOnStart = false,
 
-    -- Alternate between the two lanes every 2 seconds.
-    IntervalSeconds = 2,
+    -- Gentle left-right weaving: one small nudge about every 0.4 seconds.
+    IntervalSeconds = 0.4,
 
     -- Do not steer unless horizontal speed is above this value (studs/sec).
     MinSpeed = 28,
@@ -40,14 +40,14 @@ local CONFIG = {
     -- How far ahead to check for traffic in the target lane.
     LookAhead = 65,
 
-    -- One very brief steering tap per switch to avoid overshooting.
-    SteerDuration = 0.03,
+    -- Tiny steering pulse to make only a slight side-to-side movement.
+    SteerDuration = 0.02,
 
     -- Retry sooner when both neighboring lanes appear blocked.
     BlockedRetry = 2,
 
     -- Small delay after a lane change before another input is considered.
-    PostChangeDelay = 0.10,
+    PostChangeDelay = 0,
 }
 
 local running = true

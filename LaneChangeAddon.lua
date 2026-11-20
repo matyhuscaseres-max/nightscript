@@ -27,11 +27,11 @@ local LocalPlayer = Players.LocalPlayer
 local CONFIG = {
     StartEnabled = false,
 
-    -- Alternate gently between the two lanes every 2 seconds.
-    IntervalSeconds = 2,
+    -- Gentle left-right weaving: one small nudge about every 0.4 seconds.
+    IntervalSeconds = 0.4,
 
-    -- One very brief steering tap per switch to avoid overshooting.
-    SteerHoldSeconds = 0.03,
+    -- Tiny steering pulse to make only a slight side-to-side movement.
+    SteerHoldSeconds = 0.02,
 
     -- Avoid steering while stationary or moving very slowly.
     MinSpeed = 15,

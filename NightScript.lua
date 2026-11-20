@@ -34,18 +34,14 @@ local CONFIG = {
     -- Do not steer unless horizontal speed is above this value (studs/sec).
     MinSpeed = 28,
 
-    -- Distance from the bike to the center of the neighboring lane.
-    -- Adjust this if the bike does not line up with the next lane.
+    -- Estimated neighboring-lane spacing, used only for the traffic check.
     LaneOffset = 10,
 
     -- How far ahead to check for traffic in the target lane.
     LookAhead = 65,
 
-    -- Short steering pulses are used to reach the adjacent lane center.
-    SteerDuration = 0.06,
-    CenterTolerance = 1.0,
-    CenterTimeout = 3.0,
-    CenterSettleTime = 0.05,
+    -- One very brief steering tap per switch to avoid overshooting.
+    SteerDuration = 0.03,
 
     -- Retry sooner when both neighboring lanes appear blocked.
     BlockedRetry = 2,
@@ -173,48 +169,14 @@ local function tapSteeringKey(direction)
     return ok
 end
 
--- Change lanes in short pulses and stop once the bike reaches the target
--- lateral offset. The starting right-vector is kept as the lane reference
--- while the bike completes this short maneuver.
-local function centerAdjacentLane(root, direction)
-    local _, right = getFlatDirections(root)
-    if not right then
+-- Use one brief input pulse per switch. Do not keep correcting toward a
+-- measured offset: the bike's steering momentum can carry it past the lane.
+local function nudgeToAdjacentLane(root, direction)
+    if not root or not root.Parent then
         return false
     end
 
-    local startPosition = root.Position
-    local targetOffset = CONFIG.LaneOffset * direction
-    local deadline = os.clock() + CONFIG.CenterTimeout
-
-    while root.Parent and os.clock() < deadline do
-        local displacement = root.Position - startPosition
-        local horizontalDisplacement = Vector3.new(
-            displacement.X, 0, displacement.Z
-        )
-        local currentOffset = horizontalDisplacement:Dot(right)
-        local remaining = targetOffset - currentOffset
-
-        if math.abs(remaining) <= CONFIG.CenterTolerance then
-            return true
-        end
-
-        local correction = remaining > 0 and 1 or -1
-        if not tapSteeringKey(correction) then
-            return false
-        end
-        task.wait(CONFIG.CenterSettleTime)
-    end
-
-    if not root.Parent then
-        return false
-    end
-
-    local displacement = root.Position - startPosition
-    local horizontalDisplacement = Vector3.new(
-        displacement.X, 0, displacement.Z
-    )
-    local finalOffset = horizontalDisplacement:Dot(right)
-    return math.abs(targetOffset - finalOffset) <= CONFIG.CenterTolerance * 1.5
+    return tapSteeringKey(direction)
 end
 
 -- Minimal movable-feeling control panel.
@@ -402,20 +364,20 @@ task.spawn(function()
                 end
 
                 if chosenDirection then
-                    local sent = centerAdjacentLane(root, chosenDirection)
+                    local sent = nudgeToAdjacentLane(root, chosenDirection)
 
                     if sent then
                         preferredDirection = -chosenDirection
                         setStatus(
                             (chosenDirection < 0 and "Carril izquierdo" or "Carril derecho")
-                            .. " | Centrado | Próximo cambio en "
+                            .. " | Toque corto | Próximo cambio en "
                             .. tostring(CONFIG.IntervalSeconds)
                             .. " s"
                         )
                         task.wait(CONFIG.PostChangeDelay)
                         nextChangeAt = os.clock() + CONFIG.IntervalSeconds
                     else
-                        setStatus("No se pudo enviar A/D en este executor.")
+                        setStatus("No se pudo enviar el toque de dirección.")
                         nextChangeAt = os.clock() + CONFIG.BlockedRetry
                     end
                 else

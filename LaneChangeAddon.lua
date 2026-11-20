@@ -27,11 +27,11 @@ local LocalPlayer = Players.LocalPlayer
 local CONFIG = {
     StartEnabled = false,
 
-    -- One lane change every 10 seconds.
-    IntervalSeconds = 10,
+    -- Alternate gently between the two lanes every 2 seconds.
+    IntervalSeconds = 2,
 
     -- Short A/D pulses are used to reach the center of the next lane.
-    SteerHoldSeconds = 0.10,
+    SteerHoldSeconds = 0.06,
     LaneOffset = 10,
     CenterTolerance = 1.0,
     CenterTimeout = 3.0,

@@ -10,7 +10,7 @@ Complemento independiente para PC:
 - Se ejecuta junto al sistema de farmeo existente.
 - Se activa y desactiva desde su propia interfaz.
 - Comprueba que el personaje esté sentado y que la moto se mueva.
-- Alterna las teclas A y D cada 10 segundos.
+- Alterna las teclas A y D cada 2 segundos para mantenerse entre dos carriles.
 - Después del cambio, usa pulsaciones cortas para intentar centrar la moto en el carril nuevo.
 - RightShift muestra u oculta el panel.
 
@@ -19,7 +19,7 @@ El complemento no detecta si el otro sistema está farmeando; actívalo manualme
 ## Ajustes
 
 Edita la tabla `CONFIG` en `LaneChangeAddon.lua`:
-- `IntervalSeconds`: tiempo entre cambios (10 segundos por defecto).
+- `IntervalSeconds`: tiempo entre cambios (2 segundos por defecto).
 - `LaneOffset`: desplazamiento lateral estimado entre carriles.
 - `CenterTolerance` y `CenterTimeout`: tolerancia y tiempo máximo del centrado.
 - `SteerHoldSeconds`: duración de cada pulsación A/D.

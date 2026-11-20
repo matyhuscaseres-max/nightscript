@@ -28,8 +28,8 @@ local LocalPlayer = Players.LocalPlayer
 local CONFIG = {
     EnabledOnStart = false,
 
-    -- Fixed delay between successful lane changes.
-    IntervalSeconds = 10,
+    -- Alternate between the two lanes every 2 seconds.
+    IntervalSeconds = 2,
 
     -- Do not steer unless horizontal speed is above this value (studs/sec).
     MinSpeed = 28,
@@ -42,16 +42,16 @@ local CONFIG = {
     LookAhead = 65,
 
     -- Short steering pulses are used to reach the adjacent lane center.
-    SteerDuration = 0.10,
+    SteerDuration = 0.06,
     CenterTolerance = 1.0,
     CenterTimeout = 3.0,
     CenterSettleTime = 0.05,
 
     -- Retry sooner when both neighboring lanes appear blocked.
-    BlockedRetry = 8,
+    BlockedRetry = 2,
 
     -- Small delay after a lane change before another input is considered.
-    PostChangeDelay = 1.25,
+    PostChangeDelay = 0.10,
 }
 
 local running = true
